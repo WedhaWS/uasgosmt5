@@ -1,0 +1,24 @@
+{
+    "app":{
+        "name": "uasgo",
+        "version": "1.0.0"
+    },
+    "web":{
+        "host": "localhost",
+        "port": 3000
+    },
+    "database":{
+        "postgre":{
+            "host": "localhost",
+            "port": 5432,
+            "user": "wedha",
+            "password": "passwordku",
+            "dbname": "uasgo_db"
+        },
+        "mongodb":{
+            "port": 27017,
+            "host": "localhost",
+            "dbname": "uasgo_db"
+        }
+    }
+}
