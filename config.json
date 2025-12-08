@@ -1,7 +1,10 @@
 {
     "app":{
         "name": "uasgo",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "port" : 3000,
+        "prefork": false,
+        "jwt-secret": "uasgo-secret-key"
     },
     "web":{
         "host": "localhost",
@@ -19,6 +22,14 @@
             "port": 27017,
             "host": "localhost",
             "dbname": "uasgo_db"
+        },
+        "redis": {
+          "port" : 6379,
+          "host" : "localhost",
+          "DB" : 0
         }
-    }
+    },
+  "log": {
+    "level" : 6
+  }
 }
