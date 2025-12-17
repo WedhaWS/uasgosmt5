@@ -1,0 +1,1785 @@
+openapi: 3.0.3
+info:
+  title: UAS Achievement Management API
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+  - url: https://api.example.com/api/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: Endpoint untuk autentikasi dan manajemen sesi
+  - name: Users
+    description: Manajemen pengguna (Admin only)
+  - name: Achievements
+    description: Manajemen prestasi mahasiswa
+  - name: Students
+    description: Informasi mahasiswa
+  - name: Lecturers
+    description: Informasi dosen
+  - name: Reports
+    description: Laporan dan statistik
+
+security:
+  - BearerAuth: []
+
+paths:
+  # =================================================================
+  # Authentication Endpoints
+  # =================================================================
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login pengguna
+      description: Autentikasi pengguna dengan username/email dan password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: Username atau email pengguna
+                  example: "john.doe@example.com"
+                password:
+                  type: string
+                  format: password
+                  description: Password pengguna
+                  example: "password123"
+      responses:
+        '200':
+          description: Login berhasil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+                            description: JWT access token
+                          refreshToken:
+                            type: string
+                            description: JWT refresh token
+                          user:
+                            $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Memperbarui access token menggunakan refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refreshToken
+              properties:
+                refreshToken:
+                  type: string
+                  description: Refresh token yang valid
+      responses:
+        '200':
+          description: Token berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          accessToken:
+                            type: string
+                          refreshToken:
+                            type: string
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout pengguna
+      description: Menghapus sesi pengguna dan invalidate token
+      responses:
+        '200':
+          description: Logout berhasil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /auth/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Mendapatkan profil pengguna
+      description: Mengambil informasi profil pengguna yang sedang login
+      responses:
+        '200':
+          description: Profil pengguna berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # =================================================================
+  # Users Management (Admin Only)
+  # =================================================================
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Mendapatkan daftar semua pengguna
+      description: Mengambil daftar semua pengguna dengan pagination (Admin only)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Daftar pengguna berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+                      meta:
+                        $ref: '#/components/schemas/MetaInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Users
+      summary: Membuat pengguna baru
+      description: Membuat pengguna baru (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: Pengguna berhasil dibuat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}:
+    get:
+      tags:
+        - Users
+      summary: Mendapatkan detail pengguna
+      description: Mengambil detail pengguna berdasarkan ID (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID pengguna
+      responses:
+        '200':
+          description: Detail pengguna berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      tags:
+        - Users
+      summary: Memperbarui pengguna
+      description: Memperbarui informasi pengguna (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID pengguna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Pengguna berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags:
+        - Users
+      summary: Menghapus pengguna
+      description: Menghapus pengguna (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID pengguna
+      responses:
+        '200':
+          description: Pengguna berhasil dihapus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}/role:
+    put:
+      tags:
+        - Users
+      summary: Memperbarui role pengguna
+      description: Memperbarui role pengguna (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID pengguna
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - roleId
+              properties:
+                roleId:
+                  type: string
+                  description: ID role baru
+      responses:
+        '200':
+          description: Role pengguna berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # =================================================================
+  # Achievements Management
+  # =================================================================
+  /achievements:
+    get:
+      tags:
+        - Achievements
+      summary: Mendapatkan daftar prestasi
+      description: Mengambil daftar prestasi (filtered berdasarkan role pengguna)
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter berdasarkan tipe prestasi
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, verified, rejected]
+          description: Filter berdasarkan status prestasi
+      responses:
+        '200':
+          description: Daftar prestasi berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Achievement'
+                      meta:
+                        $ref: '#/components/schemas/MetaInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Achievements
+      summary: Membuat prestasi baru
+      description: Membuat prestasi baru (Mahasiswa only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAchievementRequest'
+      responses:
+        '201':
+          description: Prestasi berhasil dibuat
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Achievement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /achievements/{id}:
+    get:
+      tags:
+        - Achievements
+      summary: Mendapatkan detail prestasi
+      description: Mengambil detail prestasi berdasarkan ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      responses:
+        '200':
+          description: Detail prestasi berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Achievement'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    put:
+      tags:
+        - Achievements
+      summary: Memperbarui prestasi
+      description: Memperbarui prestasi (Mahasiswa pemilik only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAchievementRequest'
+      responses:
+        '200':
+          description: Prestasi berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Achievement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags:
+        - Achievements
+      summary: Menghapus prestasi
+      description: Menghapus prestasi (Mahasiswa pemilik only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      responses:
+        '200':
+          description: Prestasi berhasil dihapus
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /achievements/{id}/submit:
+    post:
+      tags:
+        - Achievements
+      summary: Submit prestasi untuk verifikasi
+      description: Mengirimkan prestasi untuk diverifikasi oleh dosen wali
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      responses:
+        '200':
+          description: Prestasi berhasil disubmit untuk verifikasi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Achievement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /achievements/{id}/verify:
+    post:
+      tags:
+        - Achievements
+      summary: Verifikasi prestasi
+      description: Memverifikasi prestasi (Dosen Wali only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+                  description: Catatan verifikasi
+                points:
+                  type: integer
+                  description: Poin yang diberikan
+      responses:
+        '200':
+          description: Prestasi berhasil diverifikasi
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Achievement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /achievements/{id}/reject:
+    post:
+      tags:
+        - Achievements
+      summary: Menolak prestasi
+      description: Menolak prestasi (Dosen Wali only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  description: Alasan penolakan
+                notes:
+                  type: string
+                  description: Catatan tambahan
+      responses:
+        '200':
+          description: Prestasi berhasil ditolak
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Achievement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /achievements/{id}/history:
+    get:
+      tags:
+        - Achievements
+      summary: Mendapatkan riwayat status prestasi
+      description: Mengambil riwayat perubahan status prestasi
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      responses:
+        '200':
+          description: Riwayat status berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/StatusHistory'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /achievements/{id}/attachments:
+    post:
+      tags:
+        - Achievements
+      summary: Upload lampiran prestasi
+      description: Mengunggah file lampiran untuk prestasi
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID prestasi
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: File-file yang akan diunggah
+      responses:
+        '200':
+          description: File berhasil diunggah
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AchievementAttachment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # =================================================================
+  # Students Management
+  # =================================================================
+  /students:
+    get:
+      tags:
+        - Students
+      summary: Mendapatkan daftar mahasiswa
+      description: Mengambil daftar semua mahasiswa
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Daftar mahasiswa berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Student'
+                      meta:
+                        $ref: '#/components/schemas/MetaInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /students/{id}:
+    get:
+      tags:
+        - Students
+      summary: Mendapatkan detail mahasiswa
+      description: Mengambil detail mahasiswa berdasarkan ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID mahasiswa
+      responses:
+        '200':
+          description: Detail mahasiswa berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Student'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /students/{id}/achievements:
+    get:
+      tags:
+        - Students
+      summary: Mendapatkan prestasi mahasiswa
+      description: Mengambil daftar prestasi mahasiswa tertentu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID mahasiswa
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, verified, rejected]
+          description: Filter berdasarkan status prestasi
+      responses:
+        '200':
+          description: Daftar prestasi mahasiswa berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Achievement'
+                      meta:
+                        $ref: '#/components/schemas/MetaInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /students/{id}/advisor:
+    put:
+      tags:
+        - Students
+      summary: Memperbarui dosen wali mahasiswa
+      description: Mengubah dosen wali mahasiswa (Admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID mahasiswa
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - advisorId
+              properties:
+                advisorId:
+                  type: string
+                  description: ID dosen wali baru
+      responses:
+        '200':
+          description: Dosen wali berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Student'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # =================================================================
+  # Lecturers Management
+  # =================================================================
+  /lecturers:
+    get:
+      tags:
+        - Lecturers
+      summary: Mendapatkan daftar dosen
+      description: Mengambil daftar semua dosen
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/Order'
+      responses:
+        '200':
+          description: Daftar dosen berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Lecturer'
+                      meta:
+                        $ref: '#/components/schemas/MetaInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /lecturers/{id}/advisees:
+    get:
+      tags:
+        - Lecturers
+      summary: Mendapatkan prestasi mahasiswa bimbingan
+      description: Mengambil daftar prestasi dari mahasiswa yang dibimbing dosen
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID dosen
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, submitted, verified, rejected]
+          description: Filter berdasarkan status prestasi
+      responses:
+        '200':
+          description: Daftar prestasi mahasiswa bimbingan berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Achievement'
+                      meta:
+                        $ref: '#/components/schemas/MetaInfo'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # =================================================================
+  # Reports & Analytics
+  # =================================================================
+  /reports/statistics:
+    get:
+      tags:
+        - Reports
+      summary: Mendapatkan statistik umum
+      description: Mengambil statistik umum prestasi dan pengguna
+      responses:
+        '200':
+          description: Statistik berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/GeneralStatistics'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/student/{id}:
+    get:
+      tags:
+        - Reports
+      summary: Mendapatkan statistik mahasiswa
+      description: Mengambil statistik prestasi mahasiswa tertentu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID mahasiswa
+      responses:
+        '200':
+          description: Statistik mahasiswa berhasil diambil
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/WebResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/StudentStatistics'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# =================================================================
+# Components
+# =================================================================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Nomor halaman
+    
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      description: Jumlah item per halaman
+    
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+      description: Kata kunci pencarian
+    
+    SortBy:
+      name: sortBy
+      in: query
+      schema:
+        type: string
+        default: createdAt
+      description: Field untuk sorting
+    
+    Order:
+      name: order
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+      description: Urutan sorting
+
+  responses:
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/WebResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 400
+                  status:
+                    example: "error"
+                  message:
+                    example: "Invalid request data"
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/WebResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 401
+                  status:
+                    example: "error"
+                  message:
+                    example: "Unauthorized access"
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/WebResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 403
+                  status:
+                    example: "error"
+                  message:
+                    example: "Insufficient permissions"
+
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/WebResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 404
+                  status:
+                    example: "error"
+                  message:
+                    example: "Resource not found"
+
+  schemas:
+    # =================================================================
+    # Base Response Schema
+    # =================================================================
+    WebResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: HTTP status code
+          example: 200
+        status:
+          type: string
+          description: Status response
+          example: "success"
+        message:
+          type: string
+          description: Response message
+          example: "Operation successful"
+        data:
+          description: Response data
+        meta:
+          $ref: '#/components/schemas/MetaInfo'
+
+    MetaInfo:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Halaman saat ini
+          example: 1
+        limit:
+          type: integer
+          description: Jumlah item per halaman
+          example: 10
+        totalData:
+          type: integer
+          format: int64
+          description: Total data
+          example: 100
+        totalPage:
+          type: integer
+          description: Total halaman
+          example: 10
+        sortBy:
+          type: string
+          description: Field sorting
+          example: "createdAt"
+        order:
+          type: string
+          description: Urutan sorting
+          example: "desc"
+        search:
+          type: string
+          description: Kata kunci pencarian
+          example: "prestasi"
+
+    # =================================================================
+    # User Related Schemas
+    # =================================================================
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID pengguna
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        username:
+          type: string
+          description: Username pengguna
+          example: "john.doe"
+        email:
+          type: string
+          format: email
+          description: Email pengguna
+          example: "john.doe@example.com"
+        fullName:
+          type: string
+          description: Nama lengkap pengguna
+          example: "John Doe"
+        roleId:
+          type: string
+          description: ID role pengguna
+          example: "role-123"
+        role:
+          $ref: '#/components/schemas/Role'
+        isActive:
+          type: boolean
+          description: Status aktif pengguna
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: Waktu pembuatan
+          example: "2023-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Waktu pembaruan terakhir
+          example: "2023-01-01T00:00:00Z"
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID role
+          example: "role-123"
+        name:
+          type: string
+          description: Nama role
+          example: "mahasiswa"
+        description:
+          type: string
+          description: Deskripsi role
+          example: "Role untuk mahasiswa"
+        createdAt:
+          type: string
+          format: date-time
+          description: Waktu pembuatan
+          example: "2023-01-01T00:00:00Z"
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+        - fullName
+        - roleId
+      properties:
+        username:
+          type: string
+          description: Username pengguna
+          example: "john.doe"
+        email:
+          type: string
+          format: email
+          description: Email pengguna
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          description: Password pengguna
+          example: "password123"
+        fullName:
+          type: string
+          description: Nama lengkap pengguna
+          example: "John Doe"
+        roleId:
+          type: string
+          description: ID role pengguna
+          example: "role-123"
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username pengguna
+          example: "john.doe"
+        email:
+          type: string
+          format: email
+          description: Email pengguna
+          example: "john.doe@example.com"
+        fullName:
+          type: string
+          description: Nama lengkap pengguna
+          example: "John Doe"
+        isActive:
+          type: boolean
+          description: Status aktif pengguna
+          example: true
+
+    # =================================================================
+    # Student & Lecturer Schemas
+    # =================================================================
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID student
+          example: "student-123"
+        userId:
+          type: string
+          description: ID user terkait
+          example: "user-123"
+        user:
+          $ref: '#/components/schemas/User'
+        studentId:
+          type: string
+          description: NIM mahasiswa
+          example: "2021001001"
+        programStudy:
+          type: string
+          description: Program studi
+          example: "Teknik Informatika"
+        academicYear:
+          type: string
+          description: Tahun akademik
+          example: "2021/2022"
+        advisorId:
+          type: string
+          nullable: true
+          description: ID dosen wali
+          example: "lecturer-123"
+        advisor:
+          $ref: '#/components/schemas/Lecturer'
+        createdAt:
+          type: string
+          format: date-time
+          description: Waktu pembuatan
+          example: "2023-01-01T00:00:00Z"
+
+    Lecturer:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID lecturer
+          example: "lecturer-123"
+        userId:
+          type: string
+          description: ID user terkait
+          example: "user-123"
+        user:
+          $ref: '#/components/schemas/User'
+        lecturerId:
+          type: string
+          description: NIP dosen
+          example: "198501012010121001"
+        department:
+          type: string
+          description: Departemen
+          example: "Teknik Informatika"
+        createdAt:
+          type: string
+          format: date-time
+          description: Waktu pembuatan
+          example: "2023-01-01T00:00:00Z"
+
+    # =================================================================
+    # Achievement Schemas
+    # =================================================================
+    Achievement:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID prestasi
+          example: "507f1f77bcf86cd799439011"
+        studentId:
+          type: string
+          description: ID mahasiswa
+          example: "student-123"
+        achievementType:
+          type: string
+          description: Tipe prestasi
+          enum: [competition, publication, organization, certification, other]
+          example: "competition"
+        title:
+          type: string
+          description: Judul prestasi
+          example: "Juara 1 Lomba Programming"
+        description:
+          type: string
+          description: Deskripsi prestasi
+          example: "Meraih juara 1 dalam lomba programming tingkat nasional"
+        details:
+          $ref: '#/components/schemas/AchievementDetails'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/AchievementAttachment'
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tag prestasi
+          example: ["programming", "competition", "national"]
+        points:
+          type: integer
+          description: Poin prestasi
+          example: 100
+        isDeleted:
+          type: boolean
+          description: Status soft delete
+          example: false
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Waktu penghapusan
+        createdAt:
+          type: string
+          format: date-time
+          description: Waktu pembuatan
+          example: "2023-01-01T00:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Waktu pembaruan terakhir
+          example: "2023-01-01T00:00:00Z"
+
+    AchievementDetails:
+      type: object
+      properties:
+        # Competition fields
+        competitionName:
+          type: string
+          description: Nama kompetisi
+          example: "Lomba Programming Nasional 2023"
+        competitionLevel:
+          type: string
+          description: Tingkat kompetisi
+          enum: [local, regional, national, international]
+          example: "national"
+        rank:
+          type: integer
+          description: Peringkat yang diraih
+          example: 1
+        medalType:
+          type: string
+          description: Jenis medali
+          enum: [gold, silver, bronze]
+          example: "gold"
+        
+        # Publication fields
+        publicationType:
+          type: string
+          description: Jenis publikasi
+          enum: [journal, conference, book, thesis]
+          example: "journal"
+        publicationTitle:
+          type: string
+          description: Judul publikasi
+          example: "Machine Learning in Healthcare"
+        authors:
+          type: array
+          items:
+            type: string
+          description: Daftar penulis
+          example: ["John Doe", "Jane Smith"]
+        publisher:
+          type: string
+          description: Penerbit
+          example: "IEEE"
+        issn:
+          type: string
+          description: ISSN publikasi
+          example: "1234-5678"
+        
+        # Organization fields
+        organizationName:
+          type: string
+          description: Nama organisasi
+          example: "Himpunan Mahasiswa Teknik Informatika"
+        position:
+          type: string
+          description: Posisi dalam organisasi
+          example: "Ketua"
+        period:
+          $ref: '#/components/schemas/PeriodDetails'
+        
+        # Certification fields
+        certificationName:
+          type: string
+          description: Nama sertifikasi
+          example: "AWS Certified Solutions Architect"
+        issuedBy:
+          type: string
+          description: Penerbit sertifikat
+          example: "Amazon Web Services"
+        certificationNumber:
+          type: string
+          description: Nomor sertifikat
+          example: "AWS-CSA-2023-001"
+        validUntil:
+          type: string
+          format: date-time
+          nullable: true
+          description: Berlaku hingga
+          example: "2026-01-01T00:00:00Z"
+        
+        # General fields
+        eventDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Tanggal acara
+          example: "2023-06-15T00:00:00Z"
+        location:
+          type: string
+          description: Lokasi acara
+          example: "Jakarta, Indonesia"
+        organizer:
+          type: string
+          description: Penyelenggara
+          example: "Kementerian Pendidikan"
+        score:
+          type: number
+          format: float
+          description: Skor yang diperoleh
+          example: 95.5
+        customFields:
+          type: object
+          additionalProperties: true
+          description: Field kustom tambahan
+
+    PeriodDetails:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+          description: Tanggal mulai
+          example: "2023-01-01T00:00:00Z"
+        end:
+          type: string
+          format: date-time
+          description: Tanggal selesai
+          example: "2023-12-31T00:00:00Z"
+
+    AchievementAttachment:
+      type: object
+      properties:
+        fileName:
+          type: string
+          description: Nama file
+          example: "sertifikat.pdf"
+        fileUrl:
+          type: string
+          description: URL file
+          example: "/uploads/achievements/sertifikat.pdf"
+        fileType:
+          type: string
+          description: Tipe file
+          example: "application/pdf"
+        uploadedAt:
+          type: string
+          format: date-time
+          description: Waktu upload
+          example: "2023-01-01T00:00:00Z"
+
+    CreateAchievementRequest:
+      type: object
+      required:
+        - achievementType
+        - title
+        - description
+      properties:
+        achievementType:
+          type: string
+          enum: [competition, publication, organization, certification, other]
+          description: Tipe prestasi
+          example: "competition"
+        title:
+          type: string
+          description: Judul prestasi
+          example: "Juara 1 Lomba Programming"
+        description:
+          type: string
+          description: Deskripsi prestasi
+          example: "Meraih juara 1 dalam lomba programming tingkat nasional"
+        details:
+          $ref: '#/components/schemas/AchievementDetails'
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tag prestasi
+          example: ["programming", "competition", "national"]
+
+    UpdateAchievementRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Judul prestasi
+          example: "Juara 1 Lomba Programming"
+        description:
+          type: string
+          description: Deskripsi prestasi
+          example: "Meraih juara 1 dalam lomba programming tingkat nasional"
+        details:
+          $ref: '#/components/schemas/AchievementDetails'
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tag prestasi
+          example: ["programming", "competition", "national"]
+
+    StatusHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          description: ID riwayat status
+          example: "history-123"
+        achievementId:
+          type: string
+          description: ID prestasi
+          example: "507f1f77bcf86cd799439011"
+        status:
+          type: string
+          enum: [draft, submitted, verified, rejected]
+          description: Status
+          example: "verified"
+        notes:
+          type: string
+          description: Catatan
+          example: "Prestasi telah diverifikasi"
+        changedBy:
+          type: string
+          description: ID pengguna yang mengubah
+          example: "user-123"
+        changedAt:
+          type: string
+          format: date-time
+          description: Waktu perubahan
+          example: "2023-01-01T00:00:00Z"
+
+    # =================================================================
+    # Statistics Schemas
+    # =================================================================
+    GeneralStatistics:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+          description: Total pengguna
+          example: 1000
+        totalStudents:
+          type: integer
+          description: Total mahasiswa
+          example: 800
+        totalLecturers:
+          type: integer
+          description: Total dosen
+          example: 50
+        totalAchievements:
+          type: integer
+          description: Total prestasi
+          example: 500
+        achievementsByType:
+          type: object
+          properties:
+            competition:
+              type: integer
+              example: 200
+            publication:
+              type: integer
+              example: 150
+            organization:
+              type: integer
+              example: 100
+            certification:
+              type: integer
+              example: 50
+        achievementsByStatus:
+          type: object
+          properties:
+            draft:
+              type: integer
+              example: 100
+            submitted:
+              type: integer
+              example: 150
+            verified:
+              type: integer
+              example: 200
+            rejected:
+              type: integer
+              example: 50
+        monthlyAchievements:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+                example: "2023-01"
+              count:
+                type: integer
+                example: 25
+
+    StudentStatistics:
+      type: object
+      properties:
+        studentId:
+          type: string
+          description: ID mahasiswa
+          example: "student-123"
+        totalAchievements:
+          type: integer
+          description: Total prestasi
+          example: 10
+        totalPoints:
+          type: integer
+          description: Total poin
+          example: 500
+        achievementsByType:
+          type: object
+          properties:
+            competition:
+              type: integer
+              example: 5
+            publication:
+              type: integer
+              example: 3
+            organization:
+              type: integer
+              example: 2
+        achievementsByStatus:
+          type: object
+          properties:
+            draft:
+              type: integer
+              example: 2
+            submitted:
+              type: integer
+              example: 3
+            verified:
+              type: integer
+              example: 4
+            rejected:
+              type: integer
+              example: 1
+        recentAchievements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Achievement'
