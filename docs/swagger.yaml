@@ -49,7 +49,7 @@ paths:
                 username:
                   type: string
                   description: Username atau email pengguna
-                  example: "john.doe@example.com"
+                  example: "brian@example.com"
                 password:
                   type: string
                   format: password
@@ -1218,12 +1218,12 @@ components:
         username:
           type: string
           description: Username pengguna
-          example: "john.doe"
+          example: "brian"
         email:
           type: string
           format: email
           description: Email pengguna
-          example: "john.doe@example.com"
+          example: "brian@example.com"
         fullName:
           type: string
           description: Nama lengkap pengguna
@@ -1282,12 +1282,12 @@ components:
         username:
           type: string
           description: Username pengguna
-          example: "john.doe"
+          example: "brian"
         email:
           type: string
           format: email
           description: Email pengguna
-          example: "john.doe@example.com"
+          example: "brian@example.com"
         password:
           type: string
           format: password
@@ -1308,12 +1308,12 @@ components:
         username:
           type: string
           description: Username pengguna
-          example: "john.doe"
+          example: "brian"
         email:
           type: string
           format: email
           description: Email pengguna
-          example: "john.doe@example.com"
+          example: "brian@example.com"
         fullName:
           type: string
           description: Nama lengkap pengguna
@@ -1346,7 +1346,7 @@ components:
         programStudy:
           type: string
           description: Program studi
-          example: "Teknik Informatika"
+          example: "Informatic Engineering"
         academicYear:
           type: string
           description: Tahun akademik
@@ -1384,7 +1384,7 @@ components:
         department:
           type: string
           description: Departemen
-          example: "Teknik Informatika"
+          example: "Informatic Engineering"
         createdAt:
           type: string
           format: date-time
@@ -1506,7 +1506,7 @@ components:
         organizationName:
           type: string
           description: Nama organisasi
-          example: "Himpunan Mahasiswa Teknik Informatika"
+          example: "Himpunan Mahasiswa Informatic Engineering"
         position:
           type: string
           description: Posisi dalam organisasi

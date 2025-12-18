@@ -1,0 +1,157 @@
+{
+	"info": {
+		"_postman_id": "c5e6f7a8-1234-4b5c-9d0e-f1a2b3c4d5e6",
+		"name": "UAS Achievement Management API (Swagger Match)",
+		"description": "Koleksi Postman yang disesuaikan dengan swagger.yaml",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"john.doe@example.com\",\n    \"password\": \"password123\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refreshToken\": \"string\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{base_url}}/auth/refresh", "host": ["{{base_url}}"], "path": ["auth", "refresh"] }
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"url": { "raw": "{{base_url}}/auth/logout", "host": ["{{base_url}}"], "path": ["auth", "logout"] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Users (Admin Only)",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"string\",\n    \"email\": \"user@example.com\",\n    \"password\": \"string\",\n    \"fullName\": \"string\",\n    \"roleId\": \"string\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{base_url}}/users", "host": ["{{base_url}}"], "path": ["users"] }
+					}
+				},
+				{
+					"name": "Get User Detail",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/users/:id", "host": ["{{base_url}}"], "path": ["users", ":id"], "variable": [{ "key": "id", "value": "uuid" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Achievements",
+			"item": [
+				{
+					"name": "List Achievements",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/achievements?status=verified&type=competition&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["achievements"],
+							"query": [
+								{ "key": "status", "value": "verified" },
+								{ "key": "type", "value": "competition" },
+								{ "key": "limit", "value": "10" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Achievement",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"string\",\n    \"type\": \"competition\",\n    \"data\": {\n        \"rank\": \"1\",\n        \"level\": \"National\"\n    }\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{base_url}}/achievements", "host": ["{{base_url}}"], "path": ["achievements"] }
+					}
+				},
+				{
+					"name": "Submit Achievement",
+					"request": {
+						"method": "POST",
+						"url": { "raw": "{{base_url}}/achievements/:id/submit", "host": ["{{base_url}}"], "path": ["achievements", ":id", "submit"], "variable": [{ "key": "id", "value": "" }] }
+					}
+				},
+				{
+					"name": "Verify Achievement",
+					"request": {
+						"method": "POST",
+						"url": { "raw": "{{base_url}}/achievements/:id/verify", "host": ["{{base_url}}"], "path": ["achievements", ":id", "verify"], "variable": [{ "key": "id", "value": "" }] }
+					}
+				},
+				{
+					"name": "Reject Achievement",
+					"request": {
+						"method": "POST",
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rejectionNote\": \"string\"\n}",
+							"options": { "raw": { "language": "json" } }
+						},
+						"url": { "raw": "{{base_url}}/achievements/:id/reject", "host": ["{{base_url}}"], "path": ["achievements", ":id", "reject"], "variable": [{ "key": "id", "value": "" }] }
+					}
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "Global Statistics",
+					"request": {
+						"method": "GET",
+						"url": { "raw": "{{base_url}}/reports/statistics", "host": ["{{base_url}}"], "path": ["reports", "statistics"] }
+					}
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+	},
+	"variable": [
+		{ "key": "base_url", "value": "http://localhost:3000/api/v1", "type": "string" },
+		{ "key": "token", "value": "", "type": "string" }
+	]
+}
