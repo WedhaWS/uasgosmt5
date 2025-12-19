@@ -1,12 +1,10 @@
-# Sistem Pelaporan Prestasi Mahasiswa (Backend API)
+# Sistem Pelaporan Prestasi Mahasiswa 
 
 > **Proyek Ujian Akhir Semester (UAS)**
 > Mata Kuliah: Pemrograman Backend Lanjut (Praktikum)
 > D4 Teknik Informatika - Universitas Airlangga
 
 ---
-
-## 👤 Informasi Mahasiswa
 
 | Atribut | Detail |
 | :--- | :--- |
